@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Azure SQL | High Availability Control Center</title>
+<style>
+:root{--bg:#0b1120;--panel:#111b2e;--panel2:#162239;--line:#263650;--text:#e8eef9;--muted:#91a2bd;--blue:#4da3ff;--green:#36d399;--amber:#fbbf24}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top right,#142d50 0,transparent 38%),var(--bg);color:var(--text);font:15px/1.5 Inter,Segoe UI,Arial,sans-serif}
+header{height:76px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 5%;background:#0b1120dd;position:sticky;top:0;z-index:2}
+.brand{display:flex;gap:12px;align-items:center;font-weight:750;font-size:18px}.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#0078d4,#52b8ff);display:grid;place-items:center;font-size:21px}
+.pill{border:1px solid #236b55;color:var(--green);background:#0d2b27;padding:7px 12px;border-radius:30px;font-size:12px;font-weight:700}
+main{max-width:1200px;margin:34px auto;padding:0 24px}.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:1.7px;text-transform:uppercase}
+h1{font-size:clamp(28px,4vw,42px);line-height:1.12;margin:10px 0} .sub{color:var(--muted);max-width:700px;margin-bottom:28px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 26px}button{border:0;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer;background:var(--blue);color:#071426}button.secondary{background:#1b2b45;color:var(--text);border:1px solid var(--line)}button:hover{filter:brightness(1.12)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px}.card{background:linear-gradient(145deg,var(--panel),#10192a);border:1px solid var(--line);border-radius:15px;padding:21px;box-shadow:0 10px 30px #0002}.statlabel{color:var(--muted);font-size:13px}.stat{font-size:24px;font-weight:800;margin:9px 0 3px}.green{color:var(--green)}.blue{color:var(--blue)}.muted{color:var(--muted);font-size:12px}
+.section{margin-top:20px}.section h2{font-size:18px;margin:0 0 16px}.two{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+.kv{display:flex;justify-content:space-between;gap:20px;padding:13px 0;border-bottom:1px solid var(--line)}.kv:last-child{border:0}.kv span:first-child{color:var(--muted)}.kv strong{font-size:13px;text-align:right;overflow-wrap:anywhere}
+.arch{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:12px 0}.node{border:1px solid #31527c;background:#132744;border-radius:12px;padding:15px 18px;text-align:center;min-width:130px}.node b{display:block}.node small{color:var(--muted)}.arrow{color:var(--blue);font-size:22px}
+input{background:#0b1424;border:1px solid var(--line);border-radius:8px;padding:12px;color:var(--text);width:100%;margin:6px 0 13px}label{color:var(--muted);font-size:13px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:13px 10px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-weight:600}.empty{text-align:center;color:var(--muted);padding:24px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:32px}
+.toast{position:fixed;right:20px;bottom:20px;background:#12352f;border:1px solid #26765e;color:#b8ffe7;padding:14px 18px;border-radius:10px;display:none;z-index:5}
+@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}@media(max-width:520px){header{padding:0 16px}.brand{font-size:14px}main{padding:0 15px}.grid{grid-template-columns:1fr 1fr}.card{padding:16px}.stat{font-size:19px}}
+
+.authscreen{position:fixed;inset:0;background:#080e1b;z-index:20;display:grid;place-items:center;padding:20px}.authbox{width:min(100%,460px);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:28px;box-shadow:0 25px 90px #0008}.authbox h2{font-size:25px;margin:8px 0}.authbox p{color:var(--muted);font-size:13px}.tabs{display:flex;gap:8px;margin:20px 0}.tabs button{flex:1}.autherror{color:#ff9b9b;font-size:13px;min-height:20px}.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="logo">▦</div>Azure SQL <span style="color:var(--muted);font-weight:400">/ HA Control Center</span></div><div class="userbar"><span id="welcome" class="muted">Guest</span><button class="secondary" onclick="logout()" style="padding:8px 12px">Log out</button><div class="pill">● DEMO MODE</div></div></header>
+<div class="authscreen" id="authScreen"><div class="authbox"><div class="logo">▦</div><div class="eyebrow" style="margin-top:18px">Azure SQL · Demo portal</div><h2 id="authTitle">Welcome back</h2><p>Create an account or sign in to access the dashboard.</p><div class="tabs"><button id="loginTab" onclick="setAuthMode('login')">Login</button><button class="secondary" id="signupTab" onclick="setAuthMode('signup')">Create account</button></div><form id="authForm"><div id="nameField" class="hidden"><label>Full name</label><input id="authName" placeholder="Your name"></div><label>Email address</label><input id="authEmail" type="email" required placeholder="you@example.com"><label>Password</label><input id="authPassword" type="password" required minlength="8" placeholder="At least 8 characters"><div id="confirmField" class="hidden"><label>Confirm password</label><input id="authConfirm" type="password" minlength="8" placeholder="Re-enter password"></div><div class="autherror" id="authError"></div><button id="authSubmit" style="width:100%">Login</button></form><p>Demo only: accounts and demo orders are stored in this browser, not Azure SQL. Do not use a real or reused password. This is not secure production authentication.</p></div></div><main id="appMain" class="hidden">
+<div class="eyebrow">Disaster recovery · Private Link · Geo-replication</div>
+<h1>High availability<br>at a glance.</h1>
+<p class="sub">Monitor your Azure SQL failover group, inspect regional roles, and run a simulated transaction. This standalone preview uses demo data; it is not connected to your Azure subscription.</p>
+<div class="actions"><button onclick="refresh()">↻ Refresh status</button><button class="secondary" onclick="failover()">⇄ Simulate regional failover</button><button class="secondary" onclick="resetDemo()">Reset demo</button></div>
+<div class="grid">
+<div class="card"><div class="statlabel">Database connectivity</div><div class="stat green" id="conn">● Connected</div><div class="muted">Simulated application status</div></div>
+<div class="card"><div class="statlabel">Active primary region</div><div class="stat blue" id="region">East US</div><div class="muted" id="server">sql-primary-east</div></div>
+<div class="card"><div class="statlabel">Geo-secondary</div><div class="stat">West US</div><div class="muted" id="replica">Ready · Replication simulated</div></div>
+<div class="card"><div class="statlabel">Listener stability</div><div class="stat green">Unchanged</div><div class="muted">Same endpoint through demo failover</div></div>
+</div>
+<div class="two section">
+<div class="card"><h2>Regional architecture</h2><div class="arch"><div class="node"><b>Web App</b><small>Flask frontend</small></div><div class="arrow">→</div><div class="node"><b>Failover listener</b><small id="listener">demo-fg.database.windows.net</small></div></div><div class="arch"><div class="node"><b id="primaryNode">East US · Primary</b><small>Azure SQL Database</small></div><div class="arrow">⇄</div><div class="node"><b id="secondaryNode">West US · Secondary</b><small>Geo-replica</small></div></div><p class="muted">Illustrative architecture. Private endpoints and private DNS are represented for presentation only.</p></div>
+<div class="card"><h2>Connection diagnostics</h2><div class="kv"><span>Listener</span><strong>demo-fg.database.windows.net</strong></div><div class="kv"><span>Resolved private IP</span><strong id="ip">10.0.2.5 (demo)</strong></div><div class="kv"><span>SQL connection</span><strong class="green">● Healthy (simulated)</strong></div><div class="kv"><span>Last refreshed</span><strong id="time">—</strong></div><div class="kv"><span>Network exposure</span><strong>Private Link (design)</strong></div></div>
+</div>
+<div class="two section">
+<div class="card"><h2>Create a demo order</h2><form id="orderForm"><label>Customer name</label><input id="customer" placeholder="e.g. Hackathon Judge" required><label>Item / test description</label><input id="item" placeholder="e.g. Failover Test" required><button type="submit">＋ Create demo order</button></form><p class="muted">Orders are stored only in this browser preview session, not in Azure SQL.</p></div>
+<div class="card"><h2>Failover event log</h2><div id="logs" class="muted">System initialized in demo mode.</div></div>
+</div>
+<div class="card section"><h2>Recent demo orders</h2><div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Customer</th><th>Item</th><th>Created</th><th>Primary region</th></tr></thead><tbody id="orders"><tr><td colspan="5" class="empty">No orders yet. Create a demo order above.</td></tr></tbody></table></div></div>
+</main><footer>Azure SQL Failover Hackathon · Frontend preview only · Not connected to live Azure resources</footer><div class="toast" id="toast"></div>
+<script>
+let primary='East US', count=0, orders=[];
+function now(){return new Date().toLocaleString()}
+function log(s){document.getElementById('logs').innerHTML=`<p>• ${now()} — ${s}</p>`+document.getElementById('logs').innerHTML}
+function notify(s){let t=document.getElementById('toast');t.textContent=s;t.style.display='block';setTimeout(()=>t.style.display='none',2800)}
+function refresh(){document.getElementById('time').textContent=now();document.getElementById('server').textContent=primary==='East US'?'sql-primary-east':'sql-secondary-west';document.getElementById('region').textContent=primary;document.getElementById('primaryNode').textContent=primary+' · Primary';document.getElementById('secondaryNode').textContent=(primary==='East US'?'West US':'East US')+' · Secondary';document.getElementById('ip').textContent=primary==='East US'?'10.0.2.5 (demo)':'10.1.2.5 (demo)';}
+function failover(){primary=primary==='East US'?'West US':'East US';refresh();log('Simulated failover complete. Listener unchanged. New primary: '+primary);notify('Demo failover complete — '+primary+' is primary.')}
+function resetDemo(){primary='East US';orders=[];count=0;refresh();render();document.getElementById('logs').textContent='Demo reset.';notify('Demo reset')}
+function render(){document.getElementById('orders').innerHTML=orders.length?orders.map(o=>`<tr><td>${o.id}</td><td>${esc(o.customer)}</td><td>${esc(o.item)}</td><td>${o.time}</td><td>${o.region}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">No orders yet. Create a demo order above.</td></tr>'}
+function esc(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+document.getElementById('orderForm').addEventListener('submit',e=>{e.preventDefault();orders.unshift({id:++count,customer:document.getElementById('customer').value,item:document.getElementById('item').value,time:now(),region:primary});localStorage.setItem('asf_orders_'+currentUser.email,JSON.stringify(orders));render();log('Demo order #'+count+' created using listener.');e.target.reset();notify('Demo order created')});
+setInterval(()=>{document.getElementById('time').textContent=now()},10000);let em=localStorage.getItem('asf_session'),u=users()[em];if(u)enter(u);else setAuthMode('login');
+</script>
+</body></html>
